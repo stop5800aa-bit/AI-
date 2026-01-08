@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能巢 - 未來家具實驗室</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700;900&display=swap');
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            scroll-behavior: smooth;
+            -webkit-font-smoothing: antialiased;
+        }
+        .animate-fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .glass-morphism {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+    </style>
+</head>
+<body class="bg-[#F8FAFC] text-slate-900">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const Icon = ({ name, className = "w-5 h-5", ...props }) => {
+            useEffect(() => { 
+                if (window.lucide) window.lucide.createIcons(); 
+            }, [name]);
+            return <i data-lucide={name} className={className} {...props}></i>;
+        };
+
+        const App = () => {
+            const [view, setView] = useState('home');
+            const [cart, setCart] = useState(() => {
+                const savedCart = localStorage.getItem('smart_nest_cart');
+                return savedCart ? JSON.parse(savedCart) : [];
+            });
+            const [isCartOpen, setIsCartOpen] = useState(false);
+            
+            // 預約視窗相關狀態
+            const [isBookingOpen, setIsBookingOpen] = useState(false);
+            const [selectedStore, setSelectedStore] = useState(null);
+            const [bookingStatus, setBookingStatus] = useState('idle'); // idle, submitting, success
+
+            // 門市圖片輪播狀態
+            const [taipeiImgIndex, setTaipeiImgIndex] = useState(0);
+            const [taichungImgIndex, setTaichungImgIndex] = useState(0);
+            const [kaohsiungImgIndex, setKaohsiungImgIndex] = useState(0);
+
+            const taipeiImages = [
+                "https://github.com/stop5800aa-bit/AI-/blob/main/1.jpg?raw=true",
+                "https://github.com/stop5800aa-bit/AI-/blob/main/1-1.png?raw=true"
+            ];
+
+            const taichungImages = [
+                "https://github.com/stop5800aa-bit/AI-/blob/main/2.jpg?raw=true",
+                "https://github.com/stop5800aa-bit/AI-/blob/main/2-1.png?raw=true"
+            ];
+
+            const kaohsiungImages = [
+                "https://github.com/stop5800aa-bit/AI-/blob/main/3.jpg?raw=true",
+                "https://github.com/stop5800aa-bit/AI-/blob/main/3-1.png?raw=true"
+            ];
+
+            useEffect(() => {
+                localStorage.setItem('smart_nest_cart', JSON.stringify(cart));
+            }, [cart]);
+
+            useEffect(() => { window.scrollTo(0, 0); }, [view]);
+
+            useEffect(() => {
+                const timer = setInterval(() => {
+                    setTaipeiImgIndex(prev => (prev + 1) % taipeiImages.length);
+                    setTaichungImgIndex(prev => (prev + 1) % taichungImages.length);
+                    setKaohsiungImgIndex(prev => (prev + 1) % kaohsiungImages.length);
+                }, 5000);
+                return () => clearInterval(timer);
+            }, []);
+
+            const furnitureData = {
+                wardrobe: {
+                    id: 'wardrobe', title: '智型艙', price: 128000, priceLabel: 'NT$ 128,000',
+                    description: '結合 AI 雲端衣物管理與航太級殺菌技術。',
+                    longDesc: '智型艙配備了全息感測系統，能自動偵測衣物材質並提供最佳化的溫濕度保存環境。內建奈米銀離子殺菌系統，確保纖維不受損，讓您的衣物永保如新。',
+                    philosophy: '我們相信衣櫃不只是儲存空間，更是精緻生活的管家。透過 AI 學習用戶的穿衣頻率，自動優化收納動線。',
+                    specs: [
+                        { label: '尺寸', value: '120 x 60 x 220 cm' },
+                        { label: '材質', value: '航太級鋁合金 / 電控鋼化玻璃' },
+                        { label: '能耗', value: '15kWh / 月 (超低功耗模式)' }
+                    ],
+                    image: 'https://raw.githubusercontent.com/stop5800aa-bit/AI-/main/%E8%A1%A3%E6%AB%83.jpg',
+                    videoUrl: 'https://github.com/stop5800aa-bit/AI-/raw/refs/heads/main/AI%E8%A1%A3%E6%AB%83.mp4',
+                    isVideoFile: true,
+                    features: ['AI 自動收納系統', '電控蒸氣護理', '極致靜音驅動']
+                },
+                bed: {
+                    id: 'bed', title: '睡眠調控床', price: 256000, priceLabel: 'NT$ 256,000',
+                    description: '零重力懸浮支撐與生物數據追蹤。',
+                    longDesc: '系統能實時監測您的腦電波與心率。當偵測到您進入淺眠期時，系統會自動微調床墊硬度與支撐點，有效延長深層睡眠時間，實現真正的智能修復。',
+                    philosophy: '優質睡眠是現代人的奢侈品。智能床透過非接觸式感應器，將您的臥室變成一個私人的健康監測站。',
+                    specs: [
+                        { label: '硬度調整', value: '100 段電子精準微調' },
+                        { label: '感應器', value: '高精度壓電生物傳感器' },
+                        { label: '最大承重', value: '450 kg' }
+                    ],
+                    image: 'https://github.com/sxu141264-create/tast/raw/refs/heads/main/%E7%94%A2%E5%93%81%E7%85%A7.png',
+                    videoUrl: 'https://github.com/sxu141264-create/tast/raw/refs/heads/main/(%E7%B8%AE%E6%AA%94)%E5%BE%8B%E5%8B%95%E4%B9%8B%E8%8A%AF.mp4',
+                    isVideoFile: true,
+                    features: ['零重力模式', '動態恆溫層', '鼾聲震動修正']
+                },
+                desk: {
+                    id: 'desk', title: '智能電腦桌', price: 68000, priceLabel: 'NT$ 68,000',
+                    description: '全桌面無線充電與人體工學 AI 調節。',
+                    longDesc: '這款智能電腦桌採用一體化 carbon 纖維面板，整個桌面皆可作為感應充電區域。內建 AI 壓力感測器，能根據您的坐姿自動微調高度與傾斜角度，從源頭解決久坐疲勞問題。',
+                    philosophy: '工作空間應該是思維的延伸。我們將繁雜的線材隱藏，將智慧隱於無形，讓您專注於創造力。',
+                    specs: [
+                        { label: '高度調節', value: '65 cm - 125 cm (無級調節)' },
+                        { label: '充電功率', value: '同時支持 4 設備，總功率 100W' },
+                        { label: '控制面板', value: '隱形觸控 OLED 顯示螢幕' }
+                    ],
+                    image: 'https://raw.githubusercontent.com/z9042558-jpg/ggh/00d4bbd0bdc4d433404f8ba6daf93db83036a47a/4.jpg',
+                    videoUrl: 'https://cdn.jsdelivr.net/gh/z9042558-jpg/ggh@00d4bbd0bdc4d433404f8ba6daf93db83036a47a/202601062226%20(1).mp4',
+                    isVideoFile: true,
+                    features: ['全域無線電力轉換', '坐姿提醒系統', '智能理線模組']
+                }
+            };
+
+            const storeLocations = [
+                {
+                    id: 'taipei',
+                    name: '台北信義未來旗艦店',
+                    address: '台北市信義區忠孝東路五段 101 號 1F',
+                    phone: '02-2722-1234',
+                    images: taipeiImages,
+                    currentIndex: taipeiImgIndex
+                },
+                {
+                    id: 'taichung',
+                    name: '台中西屯科技生活館',
+                    address: '台中市西屯區台灣大道三段 301 號 2F',
+                    phone: '04-2255-5678',
+                    images: taichungImages,
+                    currentIndex: taichungImgIndex
+                },
+                {
+                    id: 'kaohsiung',
+                    name: '高雄鼓山智慧概念店',
+                    address: '高雄市鼓山區大順一路 115 號 3F',
+                    phone: '07-5588-9900',
+                    images: kaohsiungImages,
+                    currentIndex: kaohsiungImgIndex
+                }
+            ];
+
+            const handleBookingSubmit = (e) => {
+                e.preventDefault();
+                setBookingStatus('submitting');
+                // 模擬網路延遲
+                setTimeout(() => {
+                    setBookingStatus('success');
+                    setTimeout(() => {
+                        setIsBookingOpen(false);
+                        setBookingStatus('idle');
+                    }, 2000);
+                }, 1500);
+            };
+
+            const openBookingModal = (store) => {
+                setSelectedStore(store);
+                setIsBookingOpen(true);
+            };
+
+            const addToCart = (product) => {
+                setCart(prev => {
+                    const existing = prev.find(item => item.id === product.id);
+                    if (existing) return prev.map(item => item.id === product.id ? { ...item, qty: item.qty + 1 } : item);
+                    return [...prev, { ...product, qty: 1 }];
+                });
+                setIsCartOpen(true);
+            };
+
+            const removeFromCart = (id) => {
+                setCart(prev => prev.filter(item => item.id !== id));
+            };
+
+            const updateQty = (id, delta) => {
+                setCart(prev => prev.map(item => {
+                    if (item.id === id) {
+                        const newQty = Math.max(1, item.qty + delta);
+                        return { ...item, qty: newQty };
+                    }
+                    return item;
+                }));
+            };
+
+            const cartTotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            const cartItemCount = cart.reduce((sum, item) => sum + item.qty, 0);
+
+            const Logo = () => (
+                <div className="flex items-center space-x-3 group cursor-pointer" onClick={() => setView('home')}>
+                    <div className="w-12 h-12 flex items-center justify-center transition-transform duration-300 group-hover:scale-110">
+                        <img 
+                            src="https://github.com/stop5800aa-bit/AI-/blob/main/AI%20LOGO.png?raw=true" 
+                            alt="Smart Nest Logo" 
+                            className="w-full h-full object-contain"
+                        />
+                    </div>
+                    <div className="flex flex-col">
+                        <span className="text-xl font-black tracking-tight leading-none text-slate-900">智能巢</span>
+                        <span className="text-[10px] font-bold text-blue-600 tracking-[0.2em] uppercase">Smart Nest</span>
+                    </div>
+                </div>
+            );
+
+            return (
+                <div className="relative min-h-screen flex flex-col">
+                    {/* Booking Modal */}
+                    {isBookingOpen && (
+                        <div className="fixed inset-0 z-[200] flex items-center justify-center px-6">
+                            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md animate-fade-in" onClick={() => setIsBookingOpen(false)}></div>
+                            <div className="relative w-full max-w-lg bg-white rounded-[3rem] shadow-2xl overflow-hidden animate-fade-in">
+                                {bookingStatus === 'success' ? (
+                                    <div className="p-16 text-center space-y-6">
+                                        <div className="w-20 h-20 bg-green-50 text-green-500 rounded-full flex items-center justify-center mx-auto">
+                                            <Icon name="check-circle" className="w-10 h-10" />
+                                        </div>
+                                        <h3 className="text-2xl font-black italic">預約成功！</h3>
+                                        <p className="text-slate-400 font-medium tracking-wide">我們已收到您的資訊，導覽專員將儘速聯繫您。</p>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <div className="p-10 pb-6 border-b border-slate-50">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">VIP 預約導覽</span>
+                                                    <h3 className="text-2xl font-black italic mt-1">{selectedStore?.name}</h3>
+                                                </div>
+                                                <button onClick={() => setIsBookingOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                                                    <Icon name="x" className="w-6 h-6 text-slate-400" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <form className="p-10 pt-8 space-y-6" onSubmit={handleBookingSubmit}>
+                                            <div className="space-y-2">
+                                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">預約時間</label>
+                                                <input required type="datetime-local" className="w-full bg-slate-50 border-none rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-blue-600 transition-all outline-none" />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">姓名</label>
+                                                    <input required type="text" placeholder="例：王小明" className="w-full bg-slate-50 border-none rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-blue-600 transition-all outline-none" />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">電話</label>
+                                                    <input required type="tel" placeholder="0912-345-678" className="w-full bg-slate-50 border-none rounded-2xl px-5 py-4 text-sm font-bold focus:ring-2 focus:ring-blue-600 transition-all outline-none" />
+                                                </div>
+                                            </div>
+                                            <button 
+                                                disabled={bookingStatus === 'submitting'}
+                                                className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] hover:bg-blue-600 transition-all shadow-xl shadow-slate-200 mt-4 disabled:opacity-50"
+                                            >
+                                                {bookingStatus === 'submitting' ? '提交中...' : '確認預約申請'}
+                                            </button>
+                                        </form>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Cart Drawer */}
+                    <div className={`fixed inset-0 z-[100] transition-visibility duration-300 ${isCartOpen ? 'visible' : 'invisible'}`}>
+                        <div 
+                            className={`absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300 ${isCartOpen ? 'opacity-100' : 'opacity-0'}`}
+                            onClick={() => setIsCartOpen(false)}
+                        ></div>
+                        <div className={`absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl transition-transform duration-500 transform ${isCartOpen ? 'translate-x-0' : 'translate-x-full'} flex flex-col`}>
+                            <div className="p-8 border-b border-slate-100 flex justify-between items-center">
+                                <div className="flex items-center space-x-3">
+                                    <h2 className="text-2xl font-black italic">我的清單</h2>
+                                    <span className="bg-blue-600 text-white text-[10px] font-bold px-2 py-1 rounded-full">{cartItemCount}</span>
+                                </div>
+                                <button onClick={() => setIsCartOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                                    <Icon name="x" className="w-6 h-6 text-slate-400" />
+                                </button>
+                            </div>
+
+                            <div className="flex-grow overflow-y-auto p-8 space-y-6 custom-scrollbar">
+                                {cart.length === 0 ? (
+                                    <div className="h-full flex flex-col items-center justify-center text-slate-300 space-y-4">
+                                        <Icon name="shopping-cart" className="w-16 h-16 opacity-20" />
+                                        <p className="font-bold uppercase tracking-widest text-xs">目前沒有項目</p>
+                                    </div>
+                                ) : (
+                                    cart.map(item => (
+                                        <div key={item.id} className="flex space-x-6 items-center bg-slate-50 p-4 rounded-3xl">
+                                            <div className="w-20 h-20 rounded-2xl overflow-hidden flex-shrink-0 bg-white shadow-sm">
+                                                <img src={item.image} className="w-full h-full object-cover" />
+                                            </div>
+                                            <div className="flex-grow">
+                                                <h4 className="font-black italic text-slate-800">{item.title}</h4>
+                                                <p className="text-blue-600 font-bold text-xs mt-1">NT$ {item.price.toLocaleString()}</p>
+                                                <div className="flex items-center space-x-4 mt-3">
+                                                    <div className="flex items-center border border-slate-200 rounded-xl bg-white">
+                                                        <button onClick={() => updateQty(item.id, -1)} className="px-3 py-1 hover:text-blue-600 transition-colors font-bold">-</button>
+                                                        <span className="px-2 text-xs font-black">{item.qty}</span>
+                                                        <button onClick={() => updateQty(item.id, 1)} className="px-3 py-1 hover:text-blue-600 transition-colors font-bold">+</button>
+                                                    </div>
+                                                    <button onClick={() => removeFromCart(item.id)} className="text-[10px] font-bold text-slate-400 hover:text-red-500 uppercase tracking-widest transition-colors">移除</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            {cart.length > 0 && (
+                                <div className="p-8 border-t border-slate-100 bg-slate-50/50">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">預計結算金額</span>
+                                        <span className="text-2xl font-black italic text-slate-900">NT$ {cartTotal.toLocaleString()}</span>
+                                    </div>
+                                    <button className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] hover:bg-blue-600 transition-all shadow-xl shadow-slate-200">
+                                        前往安全結帳
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    <nav className="fixed w-full z-50 glass-morphism border-b border-slate-200/50 px-6 py-4">
+                        <div className="max-w-7xl mx-auto flex justify-between items-center">
+                            <Logo />
+                            <div className="flex items-center space-x-6 md:space-x-10">
+                                <div className="hidden md:flex space-x-8 text-[11px] tracking-widest font-bold uppercase text-slate-500">
+                                    <button onClick={() => setView('home')} className={`hover:text-blue-600 transition-colors ${view === 'home' ? 'text-blue-600' : ''}`}>科技首頁</button>
+                                    <button onClick={() => setView('locations')} className={`hover:text-blue-600 transition-colors ${view === 'locations' ? 'text-blue-600' : ''}`}>服務據點</button>
+                                </div>
+                                <button className="relative cursor-pointer group p-2 focus:outline-none" onClick={() => setIsCartOpen(true)}>
+                                    <Icon name="shopping-bag" className="w-5 h-5 text-slate-600 group-hover:text-blue-600 transition-colors" />
+                                    {cartItemCount > 0 && (
+                                        <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-[9px] font-bold min-w-[16px] h-4 px-1 rounded-full flex items-center justify-center animate-pulse">
+                                            {cartItemCount}
+                                        </span>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </nav>
+
+                    <main className="flex-grow">
+                        {view === 'home' && (
+                            <div className="animate-fade-in">
+                                <section className="pt-48 pb-24 text-center px-6">
+                                    <div className="inline-block px-4 py-1.5 mb-6 rounded-full bg-blue-50 text-blue-600 text-[10px] font-black tracking-widest uppercase border border-blue-100">
+                                        Next Generation Furniture
+                                    </div>
+                                    <h1 className="text-5xl md:text-8xl font-black mb-8 tracking-tighter italic leading-none">
+                                        重新定義<span className="text-blue-600">居家</span>系統
+                                    </h1>
+                                    <p className="text-slate-400 max-w-2xl mx-auto text-sm md:text-base leading-relaxed tracking-wide font-medium">
+                                        我們結合物聯網、AI 演算法與工業美學，將冰冷的家具轉化為懂您的生命體。
+                                    </p>
+                                    <div className="mt-12 flex justify-center space-x-4">
+                                        <button onClick={() => document.getElementById('collection').scrollIntoView()} className="bg-slate-900 text-white px-8 py-4 rounded-2xl text-xs font-bold uppercase tracking-widest hover:bg-blue-600 transition-colors">瀏覽系列</button>
+                                    </div>
+                                </section>
+
+                                <section id="collection" className="max-w-7xl mx-auto px-6 grid md:grid-cols-3 gap-10 pb-20">
+                                    {Object.values(furnitureData).map(item => (
+                                        <div key={item.id} className="group cursor-pointer" onClick={() => setView(item.id)}>
+                                            <div className="relative aspect-[4/5] rounded-[3rem] overflow-hidden shadow-xl hover:shadow-2xl hover:-translate-y-3 transition-all duration-500 border border-slate-100 bg-white">
+                                                <img src={item.image} alt={item.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-slate-900/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col justify-end p-10">
+                                                    <div className="text-white">
+                                                        <span className="text-[10px] font-bold uppercase tracking-[0.3em] opacity-70">進入智能空間</span>
+                                                        <h4 className="text-2xl font-black italic mt-1">{item.title}</h4>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="mt-8 text-center md:text-left px-4">
+                                                <h3 className="text-xl font-black italic text-slate-800">{item.title}</h3>
+                                                <p className="text-slate-400 text-xs mt-3 leading-relaxed font-medium">{item.description}</p>
+                                                <div className="mt-4 text-blue-600 font-black tracking-tight">{item.priceLabel}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </section>
+
+                                {/* Brand Values Section */}
+                                <section className="max-w-7xl mx-auto px-6 pb-32">
+                                    <div className="bg-white rounded-[3rem] border border-slate-100 shadow-sm p-12 md:p-16 grid md:grid-cols-3 gap-12">
+                                        <div className="flex flex-col items-center text-center space-y-4 group">
+                                            <div className="w-16 h-16 bg-slate-50 text-slate-800 rounded-3xl flex items-center justify-center transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white group-hover:-translate-y-2">
+                                                <Icon name="shield-check" className="w-8 h-8" />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-black italic text-lg text-slate-900">十年保固</h4>
+                                                <p className="text-slate-400 text-xs mt-2 font-medium">極致工藝，承諾品質永續</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-center text-center space-y-4 group">
+                                            <div className="w-16 h-16 bg-slate-50 text-slate-800 rounded-3xl flex items-center justify-center transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white group-hover:-translate-y-2">
+                                                <Icon name="globe" className="w-8 h-8" />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-black italic text-lg text-slate-900">全球配送</h4>
+                                                <p className="text-slate-400 text-xs mt-2 font-medium">跨越疆界，將未來送抵家門</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-center text-center space-y-4 group">
+                                            <div className="w-16 h-16 bg-slate-50 text-slate-800 rounded-3xl flex items-center justify-center transition-all duration-300 group-hover:bg-blue-600 group-hover:text-white group-hover:-translate-y-2">
+                                                <Icon name="truck" className="w-8 h-8" />
+                                            </div>
+                                            <div>
+                                                <h4 className="font-black italic text-lg text-slate-900">滿額免運</h4>
+                                                <p className="text-slate-400 text-xs mt-2 font-medium">尊榮服務，輕鬆升級居家體驗</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+                            </div>
+                        )}
+
+                        {furnitureData[view] && (
+                            <div className="pt-32 pb-20 p-6 max-w-6xl mx-auto animate-fade-in">
+                                <button onClick={() => setView('home')} className="flex items-center space-x-2 text-slate-400 hover:text-blue-600 mb-10 font-bold text-[10px] uppercase tracking-widest transition-colors">
+                                    <Icon name="arrow-left" className="w-4 h-4" /> <span>返回探索</span>
+                                </button>
+                                
+                                <div className="grid lg:grid-cols-5 gap-16 items-start">
+                                    <div className="lg:col-span-3 space-y-16">
+                                        <div className="aspect-video bg-slate-100 rounded-[3rem] overflow-hidden shadow-2xl border border-slate-200">
+                                            {furnitureData[view].isVideoFile ? (
+                                                <video controls autoPlay muted loop className="w-full h-full object-cover" src={furnitureData[view].videoUrl} />
+                                            ) : (
+                                                <iframe className="w-full h-full" src={furnitureData[view].videoUrl} frameBorder="0" allowFullScreen></iframe>
+                                            )}
+                                        </div>
+                                        
+                                        <div>
+                                            <div className="flex items-center space-x-3 mb-6">
+                                                <div className="w-8 h-1 bg-blue-600 rounded-full"></div>
+                                                <h2 className="text-sm font-black uppercase tracking-[0.3em] text-slate-400">設計理念 / Design Philosophy</h2>
+                                            </div>
+                                            <h3 className="text-3xl font-black italic mb-6 text-slate-900">{furnitureData[view].title}</h3>
+                                            <p className="text-slate-500 leading-relaxed text-lg font-medium">{furnitureData[view].philosophy}</p>
+                                            <p className="mt-6 text-slate-500 leading-relaxed font-medium">{furnitureData[view].longDesc}</p>
+                                        </div>
+
+                                        <div className="bg-slate-900 text-white p-12 rounded-[3rem] shadow-2xl relative">
+                                            <h4 className="text-sm font-black uppercase tracking-[0.3em] text-blue-400 mb-8">技術規格 / Specifications</h4>
+                                            <div className="space-y-6">
+                                                {furnitureData[view].specs.map((spec, idx) => (
+                                                    <div key={idx} className="flex justify-between items-center border-b border-white/10 pb-4">
+                                                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">{spec.label}</span>
+                                                        <span className="font-bold text-sm tracking-tight">{spec.value}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="lg:col-span-2 sticky top-32">
+                                        <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl">
+                                            <div className="mb-8">
+                                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">建議售價</span>
+                                                <div className="text-4xl font-black text-slate-900 mt-1">{furnitureData[view].priceLabel}</div>
+                                            </div>
+                                            <button onClick={() => addToCart(furnitureData[view])} className="w-full py-5 bg-blue-600 text-white rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] hover:bg-slate-900 transition-all flex items-center justify-center space-x-3 shadow-lg">
+                                                <Icon name="shopping-cart" className="w-4 h-4" /> <span>加入清單</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {view === 'locations' && (
+                            <div className="pt-40 px-6 max-w-6xl mx-auto animate-fade-in pb-32">
+                                <div className="text-center mb-24">
+                                    <div className="inline-block px-4 py-1.5 mb-6 rounded-full bg-slate-100 text-slate-500 text-[10px] font-black tracking-widest uppercase border border-slate-200">
+                                        Experience Centers
+                                    </div>
+                                    <h2 className="text-4xl md:text-6xl font-black italic mb-6">實體體驗店</h2>
+                                    <p className="text-slate-400 font-medium max-w-2xl mx-auto leading-relaxed">親臨現場感受「智能巢」帶來的未來生活變革。</p>
+                                </div>
+
+                                <div className="space-y-24">
+                                    {storeLocations.map((loc, idx) => (
+                                        <div key={idx} className={`flex flex-col lg:flex-row gap-12 items-center ${idx % 2 === 1 ? 'lg:flex-row-reverse' : ''}`}>
+                                            <div className="w-full lg:w-1/2 aspect-[16/10] rounded-[3rem] overflow-hidden shadow-2xl border border-slate-200 group relative bg-slate-100">
+                                                <div className="relative w-full h-full">
+                                                    {loc.images.map((img, i) => (
+                                                        <img 
+                                                            key={i} src={img} alt={loc.name} 
+                                                            className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-1000 ${i === loc.currentIndex ? 'opacity-100' : 'opacity-0'}`}
+                                                        />
+                                                    ))}
+                                                </div>
+                                            </div>
+                                            <div className="w-full lg:w-1/2 space-y-8">
+                                                <h3 className="text-3xl font-black italic text-slate-900">{loc.name}</h3>
+                                                <p className="text-slate-500 font-medium leading-relaxed">{loc.address}</p>
+                                                <div className="flex items-start space-x-4">
+                                                    <div className="mt-1 p-2 bg-blue-50 text-blue-600 rounded-xl">
+                                                        <Icon name="phone" className="w-4 h-4" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">電話 / Contact</p>
+                                                        <p className="text-slate-600 font-medium">{loc.phone}</p>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    onClick={() => openBookingModal(loc)}
+                                                    className="px-8 py-4 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-xl shadow-slate-200"
+                                                >
+                                                    預約專人導覽
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </main>
+
+                    <footer className="py-20 text-center border-t border-slate-100">
+                        <p className="text-[10px] text-slate-300 tracking-[0.6em] uppercase font-black">
+                            © 2026 SMART NEST DESIGN LAB - FUTURE HOME SOLUTIONS
+                        </p>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
